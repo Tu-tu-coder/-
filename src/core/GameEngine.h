@@ -2,7 +2,6 @@
 #define GAMEENGINE_H
 
 #include <QObject>
-#include <QTimer>
 #include "GameConfig.h"
 #include "Tetromino.h"
 #include "TetrisBoard.h"
@@ -62,6 +61,7 @@ public:
     GameState state() const { return m_state; }
     GameMode mode() const { return m_mode; }
     const TetrisBoard& board() const { return m_board; }
+    TetrisBoard& board() { return m_board; }
     const Tetromino& currentPiece() const { return m_currentPiece; }
     const Tetromino& nextPiece() const { return m_nextPiece; }
     int score() const;
@@ -113,7 +113,6 @@ private:
     MoveResult rotateCW();
     MoveResult rotateCCW();
     void hardDrop();
-    void softDrop();
     void lockCurrentPiece();
     void handleLineClears(const std::vector<int>& clearedRows);
 
@@ -142,6 +141,7 @@ private:
     qint64 m_gravityAccum = 0;
     qint64 m_lockDelayAccum = 0;
     bool m_onGround = false;
+    bool m_softDropping = false; // true while down key is held
     int m_lockMoveCount = 0;
     static constexpr int kMaxLockMoves = 15; // max moves/resets before forced lock
 

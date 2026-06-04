@@ -4,8 +4,40 @@
 // Static member initialization
 bool Tetromino::s_shapesInitialized = false;
 std::array<std::array<Tetromino::Shape, 4>, GameConfig::kPieceCount> Tetromino::s_allShapes;
-Tetromino::KickTable Tetromino::s_kickI_CW, Tetromino::s_kickI_CCW;
-Tetromino::KickTable Tetromino::s_kickStd_CW, Tetromino::s_kickStd_CCW;
+
+// Helper to make a KickOffset
+static constexpr Tetromino::KickOffset K(int dr, int dc) {
+    return {dr, dc};
+}
+
+// Pre-computed kick tables using constexpr helper
+Tetromino::KickTable Tetromino::s_kickI_CW = {{
+    {{ K(0,0), K(-2,0), K( 1,0), K(-2,-1), K( 1, 2) }},  // 0→1
+    {{ K(0,0), K(-1,0), K( 2,0), K(-1, 2), K( 2,-1) }},  // 1→2
+    {{ K(0,0), K( 2,0), K(-1,0), K( 2, 1), K(-1,-2) }},  // 2→3
+    {{ K(0,0), K( 1,0), K(-2,0), K( 1,-2), K(-2, 1) }},  // 3→0
+}};
+
+Tetromino::KickTable Tetromino::s_kickI_CCW = {{
+    {{ K(0,0), K(-1,0), K( 2,0), K(-1, 2), K( 2,-1) }},  // 0→3
+    {{ K(0,0), K( 2,0), K(-1,0), K( 2, 1), K(-1,-2) }},  // 1→0
+    {{ K(0,0), K( 1,0), K(-2,0), K( 1,-2), K(-2, 1) }},  // 2→1
+    {{ K(0,0), K(-2,0), K( 1,0), K(-2,-1), K( 1, 2) }},  // 3→2
+}};
+
+Tetromino::KickTable Tetromino::s_kickStd_CW = {{
+    {{ K(0,0), K(-1,0), K(-1, 1), K( 0,-2), K(-1,-2) }},  // 0→1
+    {{ K(0,0), K( 1,0), K( 1,-1), K( 0, 2), K( 1, 2) }},  // 1→2
+    {{ K(0,0), K( 1,0), K( 1, 1), K( 0,-2), K( 1,-2) }},  // 2→3
+    {{ K(0,0), K(-1,0), K(-1,-1), K( 0, 2), K(-1, 2) }},  // 3→0
+}};
+
+Tetromino::KickTable Tetromino::s_kickStd_CCW = {{
+    {{ K(0,0), K( 1,0), K( 1, 1), K( 0,-2), K( 1,-2) }},  // 0→3
+    {{ K(0,0), K( 1,0), K( 1,-1), K( 0, 2), K( 1, 2) }},  // 1→0
+    {{ K(0,0), K(-1,0), K(-1, 1), K( 0,-2), K(-1,-2) }},  // 2→1
+    {{ K(0,0), K(-1,0), K(-1,-1), K( 0, 2), K(-1, 2) }},  // 3→2
+}};
 
 // SRS rotation states: shape[rotation][row][col], 1 = filled, 0 = empty
 void Tetromino::initShapes()
@@ -181,57 +213,6 @@ void Tetromino::initShapes()
             {{0, 0, 0, 0}}
         }};
     }
-
-    // --- SRS Wall Kick Tables ---
-
-    // I-piece CW kicks: {row, col} offsets for each test
-    // Test order: 0=no kick, 1-4=wall kicks
-    s_kickI_CW = {{
-        // 0→1
-        {{ {{0,0}, {-2,0}, { 1,0}, {-2,-1}, { 1, 2}} }},
-        // 1→2
-        {{ {{0,0}, {-1,0}, { 2,0}, {-1, 2}, { 2,-1}} }},
-        // 2→3
-        {{ {{0,0}, { 2,0}, {-1,0}, { 2, 1}, {-1,-2}} }},
-        // 3→0
-        {{ {{0,0}, { 1,0}, {-2,0}, { 1,-2}, {-2, 1}} }},
-    }};
-
-    // I-piece CCW kicks
-    s_kickI_CCW = {{
-        // 0→3
-        {{ {{0,0}, {-1,0}, { 2,0}, {-1, 2}, { 2,-1}} }},
-        // 1→0
-        {{ {{0,0}, { 2,0}, {-1,0}, { 2, 1}, {-1,-2}} }},
-        // 2→1
-        {{ {{0,0}, { 1,0}, {-2,0}, { 1,-2}, {-2, 1}} }},
-        // 3→2
-        {{ {{0,0}, {-2,0}, { 1,0}, {-2,-1}, { 1, 2}} }},
-    }};
-
-    // J/L/S/Z/T-piece CW kicks
-    s_kickStd_CW = {{
-        // 0→1
-        {{ {{0,0}, {-1,0}, {-1, 1}, { 0,-2}, {-1,-2}} }},
-        // 1→2
-        {{ {{0,0}, { 1,0}, { 1,-1}, { 0, 2}, { 1, 2}} }},
-        // 2→3
-        {{ {{0,0}, { 1,0}, { 1, 1}, { 0,-2}, { 1,-2}} }},
-        // 3→0
-        {{ {{0,0}, {-1,0}, {-1,-1}, { 0, 2}, {-1, 2}} }},
-    }};
-
-    // J/L/S/Z/T-piece CCW kicks
-    s_kickStd_CCW = {{
-        // 0→3
-        {{ {{0,0}, { 1,0}, { 1, 1}, { 0,-2}, { 1,-2}} }},
-        // 1→0
-        {{ {{0,0}, { 1,0}, { 1,-1}, { 0, 2}, { 1, 2}} }},
-        // 2→1
-        {{ {{0,0}, {-1,0}, {-1, 1}, { 0,-2}, {-1,-2}} }},
-        // 3→2
-        {{ {{0,0}, {-1,0}, {-1,-1}, { 0, 2}, {-1, 2}} }},
-    }};
 }
 
 Tetromino::Tetromino()

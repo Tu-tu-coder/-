@@ -50,6 +50,22 @@ bool TetrisBoard::canPlace(const Tetromino& piece, int boardRow, int boardCol) c
     return true;
 }
 
+bool TetrisBoard::canPlaceShape(const Tetromino::Shape& shape, int boardRow, int boardCol) const
+{
+    for (int r = 0; r < 4; ++r) {
+        for (int c = 0; c < 4; ++c) {
+            if (!shape[r][c]) continue;
+            int absR = boardRow + r;
+            int absC = boardCol + c;
+            if (absC < 0 || absC >= GameConfig::kBoardWidth) return false;
+            if (absR >= GameConfig::kTotalRows) return false;
+            if (absR < 0) continue;
+            if (m_grid[absR][absC] != GameConfig::kEmptyCell) return false;
+        }
+    }
+    return true;
+}
+
 std::vector<int> TetrisBoard::lockPiece(const Tetromino& piece, int boardRow, int boardCol)
 {
     int typeIdx = static_cast<int>(piece.type());

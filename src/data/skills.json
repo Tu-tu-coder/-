@@ -1,0 +1,20 @@
+[
+    {
+        "typeId": "time_freeze",
+        "name": "时间凝滞",
+        "description": "当前方块下落速度降低80%，持续6秒，方便微调位置",
+        "themeColor": "#3CA0FF",
+        "isInstant": false,
+        "duration": 6000,
+        "energyCost": 100
+    },
+    {
+        "typeId": "earthquake",
+        "name": "大地震",
+        "description": "消除最底部的两行（即使未满），上方方块整体下落",
+        "themeColor": "#B46428",
+        "isInstant": true,
+        "duration": 0,
+        "energyCost": 100
+    }
+]

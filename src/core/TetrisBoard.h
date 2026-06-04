@@ -26,6 +26,9 @@ public:
     // Test if a piece at (boardRow, boardCol) with given rotation can be placed
     bool canPlace(const Tetromino& piece, int boardRow, int boardCol) const;
 
+    // Test with a specific shape (used for wall kick rotation checks)
+    bool canPlaceShape(const Tetromino::Shape& shape, int boardRow, int boardCol) const;
+
     // Lock a piece into the board, returns which rows were cleared
     std::vector<int> lockPiece(const Tetromino& piece, int boardRow, int boardCol);
 

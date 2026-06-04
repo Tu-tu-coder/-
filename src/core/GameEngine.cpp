@@ -17,6 +17,16 @@ GameEngine::GameEngine(QObject* parent)
 void GameEngine::setSkillManager(SkillManager* sm)
 {
     m_skillManager = sm;
+    if (m_skillManager) {
+        m_skillManager->m_engine = this;
+        // Forward skill signals
+        connect(m_skillManager, &SkillManager::energyChanged,
+                this, &GameEngine::energyChanged);
+        connect(m_skillManager, &SkillManager::skillActivated,
+                this, &GameEngine::skillActivated);
+        connect(m_skillManager, &SkillManager::skillDeactivated,
+                this, &GameEngine::skillDeactivated);
+    }
 }
 
 void GameEngine::startGame(GameMode mode, const QString& /*skillId*/)
@@ -28,6 +38,7 @@ void GameEngine::startGame(GameMode mode, const QString& /*skillId*/)
     m_gravityAccum = 0;
     m_lockDelayAccum = 0;
     m_onGround = false;
+    m_softDropping = false;
     m_lockMoveCount = 0;
     stopDAS();
 
@@ -185,17 +196,18 @@ MoveResult GameEngine::moveDown()
 
 MoveResult GameEngine::rotateCW()
 {
-    auto& newShape = m_currentPiece.cwShape();
-    // Store current rotation
     int oldRot = m_currentPiece.rotation();
+    const auto& newShape = m_currentPiece.cwShape(); // shape AFTER rotation
 
-    // Try all wall kick offsets
+    // Try all wall kick offsets with the NEW shape
     auto& kicks = m_currentPiece.wallKickCW()[oldRot];
     for (auto& [dr, dc] : kicks) {
-        if (m_board.canPlace(m_currentPiece, m_pieceRow - dr, m_pieceCol + dc)) {
+        int newRow = m_pieceRow - dr;
+        int newCol = m_pieceCol + dc;
+        if (m_board.canPlaceShape(newShape, newRow, newCol)) {
             m_currentPiece.rotateCW();
-            m_pieceRow -= dr;
-            m_pieceCol += dc;
+            m_pieceRow = newRow;
+            m_pieceCol = newCol;
             if (m_onGround) ++m_lockMoveCount;
             return MoveResult::OK;
         }
@@ -206,13 +218,17 @@ MoveResult GameEngine::rotateCW()
 MoveResult GameEngine::rotateCCW()
 {
     int oldRot = m_currentPiece.rotation();
+    const auto& newShape = m_currentPiece.ccwShape(); // shape AFTER rotation
 
+    // Try all wall kick offsets with the NEW shape
     auto& kicks = m_currentPiece.wallKickCCW()[oldRot];
     for (auto& [dr, dc] : kicks) {
-        if (m_board.canPlace(m_currentPiece, m_pieceRow - dr, m_pieceCol + dc)) {
+        int newRow = m_pieceRow - dr;
+        int newCol = m_pieceCol + dc;
+        if (m_board.canPlaceShape(newShape, newRow, newCol)) {
             m_currentPiece.rotateCCW();
-            m_pieceRow -= dr;
-            m_pieceCol += dc;
+            m_pieceRow = newRow;
+            m_pieceCol = newCol;
             if (m_onGround) ++m_lockMoveCount;
             return MoveResult::OK;
         }
@@ -222,24 +238,10 @@ MoveResult GameEngine::rotateCCW()
 
 void GameEngine::hardDrop()
 {
-    int dropDistance = 0;
     while (m_board.canPlace(m_currentPiece, m_pieceRow + 1, m_pieceCol)) {
         ++m_pieceRow;
-        ++dropDistance;
     }
-    m_scoreCalc->addHardDrop(dropDistance);
     lockCurrentPiece();
-}
-
-void GameEngine::softDrop()
-{
-    if (moveDown() == MoveResult::Locked) {
-        lockCurrentPiece();
-    } else {
-        m_scoreCalc->addSoftDrop(1);
-    }
-    // Reset gravity so soft drop doesn't stack with normal gravity
-    m_gravityAccum = 0;
 }
 
 // ============ Lock & Clear ============
@@ -315,6 +317,11 @@ void GameEngine::processInput(GameAction action, bool pressed)
                 stopDAS();
             }
         }
+        // Stop speed drop on down key release
+        if (action == GameAction::SoftDrop) {
+            m_softDropping = false;
+            m_gravityAccum = 0; // reset so next normal drop doesn't happen immediately
+        }
         return;
     }
 
@@ -335,7 +342,8 @@ void GameEngine::processInput(GameAction action, bool pressed)
             rotateCCW();
             break;
         case GameAction::SoftDrop:
-            softDrop();
+            m_softDropping = true;
+            m_gravityAccum = 0; // start dropping immediately
             break;
         case GameAction::HardDrop:
             hardDrop();
@@ -398,6 +406,11 @@ void GameEngine::updateDAS(qint64 deltaMs)
 
 int GameEngine::gravityInterval() const
 {
+    // Speed drop: when down key is held, use fast interval
+    if (m_softDropping) {
+        return GameConfig::kSoftDropInterval;
+    }
+
     int base = GameConfig::kBaseGravityMs - (m_scoreCalc->level() - 1) * GameConfig::kGravityReductionPerLevel;
     base = std::max(base, GameConfig::kMinGravityMs);
 
