@@ -85,20 +85,27 @@ std::vector<int> TetrisBoard::lockPiece(const Tetromino& piece, int boardRow, in
 
 std::vector<int> TetrisBoard::clearFullRows()
 {
-    std::vector<int> clearedRows;
+    std::vector<int> allCleared;
 
-    for (int r = 0; r < GameConfig::kTotalRows; ++r) {
-        if (isRowFull(r)) {
-            clearedRows.push_back(r);
+    // Loop until no more full rows (handles chain clears)
+    while (true) {
+        // Find all currently full rows
+        std::vector<int> full;
+        for (int r = 0; r < GameConfig::kTotalRows; ++r) {
+            if (isRowFull(r)) {
+                full.push_back(r);
+            }
+        }
+        if (full.empty()) break;
+
+        // Clear from bottom to top
+        for (int i = static_cast<int>(full.size()) - 1; i >= 0; --i) {
+            clearRowInternal(full[i]);
+            allCleared.push_back(full[i]);
         }
     }
 
-    // Clear from bottom to top to maintain index validity
-    for (int i = static_cast<int>(clearedRows.size()) - 1; i >= 0; --i) {
-        clearRowInternal(clearedRows[i]);
-    }
-
-    return clearedRows;
+    return allCleared;
 }
 
 bool TetrisBoard::isRowFull(int row) const
