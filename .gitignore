@@ -1,0 +1,29 @@
+# 编译产物
+build/
+cmake-build-*/
+out/
+*.o
+*.obj
+*.exe
+*.out
+*.app
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
