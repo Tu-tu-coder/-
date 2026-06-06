@@ -1,26 +1,32 @@
 #ifndef SKILLPANELWIDGET_H
 #define SKILLPANELWIDGET_H
 
-#include <QWidget>
+#include <QFrame>
 #include <QLabel>
+#include <QWidget>
 
+#include "../core/GameConfig.h"
+
+class GameEngine;
 class SkillManager;
 
 class SkillPanelWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit SkillPanelWidget(SkillManager* skillMgr, QWidget* parent = nullptr);
+    explicit SkillPanelWidget(SkillManager* skillMgr, GameEngine* engine, QWidget* parent = nullptr);
 
+public slots:
     void updateSkill();
 
-protected:
-    void paintEvent(QPaintEvent* event) override;
-
 private:
+    void setSlotStyle(int index, const QString& skillId);
+
     SkillManager* m_skillMgr = nullptr;
-    QLabel* m_nameLabel;
-    QLabel* m_descLabel;
-    QLabel* m_keyHintLabel;
+    GameEngine* m_engine = nullptr;
+    QLabel* m_titleLabel = nullptr;
+    QLabel* m_stateLabel = nullptr;
+    QFrame* m_slotFrames[GameConfig::kMaxCarrySlots] = {};
+    QLabel* m_slotLabels[GameConfig::kMaxCarrySlots] = {};
 };
 
 #endif

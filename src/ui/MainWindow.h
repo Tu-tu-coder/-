@@ -6,6 +6,7 @@
 #include <QStackedWidget>
 #include <QElapsedTimer>
 #include "../core/GameEngine.h"
+#include "../core/ProgressManager.h"
 #include "../core/SkillManager.h"
 
 class GameBoardWidget;
@@ -24,11 +25,13 @@ public:
 
 private slots:
     void onGameTick();
-    void onStartGame(GameMode mode, const QString& skillId);
+    void onStartGame(GameMode mode, const QStringList& selectedLoadoutSkillIds);
     void onGameOver();
     void showMenu();
 
 private:
+    void configureSkillsForMode(GameMode mode, const QStringList& selectedLoadoutSkillIds = {});
+    QString modeLabel(GameMode mode) const;
     void setupUI();
     void setupConnections();
     void showGameUI();
@@ -39,6 +42,7 @@ private:
     // Core
     GameEngine* m_engine;
     SkillManager* m_skillMgr;
+    ProgressManager m_progress;
 
     // UI pages
     QStackedWidget* m_stack;

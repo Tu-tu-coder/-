@@ -1,8 +1,10 @@
 #ifndef ENERGYBARWIDGET_H
 #define ENERGYBARWIDGET_H
 
-#include <QWidget>
 #include <QPropertyAnimation>
+#include <QWidget>
+
+#include "../core/GameConfig.h"
 
 class SkillManager;
 
@@ -23,7 +25,7 @@ private:
     float m_glowAlpha = 0.0f;
     QPropertyAnimation* m_glowAnim = nullptr;
     int m_energy = 0;
-    int m_maxEnergy = 100;
+    int m_maxEnergy = GameConfig::kEnergyMax;
 };
 
 #endif

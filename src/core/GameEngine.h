@@ -29,6 +29,10 @@ enum class GameAction {
     HardDrop,
     HoldPiece,
     ActivateSkill,
+    ActivateSkillSlot1,
+    ActivateSkillSlot2,
+    ActivateSkillSlot3,
+    ActivateSkillSlot4,
     Pause,
     Count
 };
@@ -45,7 +49,7 @@ public:
     explicit GameEngine(QObject* parent = nullptr);
 
     // Game lifecycle
-    void startGame(GameMode mode, const QString& skillId = "");
+    void startGame(GameMode mode);
     void restart();
     void pause();
     void resume();
@@ -101,8 +105,8 @@ signals:
     void gameStateChanged(GameState state);
     void gameModeChanged(GameMode mode);
     void energyChanged(int current, int max);
-    void skillActivated(const QString& skillName);
-    void skillDeactivated(const QString& skillName);
+    void skillActivated(const QString& skillId);
+    void skillDeactivated(const QString& skillId);
 
 private:
     void enterState(GameState newState);

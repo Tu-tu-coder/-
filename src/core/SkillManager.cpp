@@ -1,8 +1,8 @@
 #include "SkillManager.h"
-#include "skills/SkillFactory.h"
-#include "TetrisBoard.h"
+
 #include "GameEngine.h"
-#include "GameConfig.h"
+#include "TetrisBoard.h"
+#include "skills/SkillFactory.h"
 
 SkillManager::SkillManager(QObject* parent)
     : QObject(parent)
@@ -13,6 +13,7 @@ void SkillManager::reset()
 {
     m_energy = 0;
     m_activeSkill.reset();
+    m_activeSkillId.clear();
     emit energyChanged(m_energy, maxEnergy());
     emit energyFull(false);
 }
@@ -21,58 +22,83 @@ void SkillManager::addEnergy(int amount)
 {
     if (!m_engine || !m_engine->isSkillsEnabled()) return;
 
-    int oldEnergy = m_energy;
+    const int oldEnergy = m_energy;
     m_energy = qMin(m_energy + amount, maxEnergy());
 
     if (m_energy != oldEnergy) {
         emit energyChanged(m_energy, maxEnergy());
-        if (m_energy >= maxEnergy() && oldEnergy < maxEnergy()) {
-            emit energyFull(true);
-        }
+        emit energyFull(m_energy >= maxEnergy());
     }
 }
 
-void SkillManager::equipSkill(const QString& skillId)
+void SkillManager::setUnlockedSkills(const QStringList& skillIds)
 {
-    m_equippedSkillId = skillId;
-    emit skillEquipped(skillId);
+    m_unlockedSkillIds = skillIds;
+    emit loadoutChanged();
 }
 
-bool SkillManager::tryActivate(TetrisBoard& board)
+void SkillManager::setLoadoutSkills(const QStringList& skillIds)
 {
-    if (m_activeSkill) return false; // skill already active
-    if (m_equippedSkillId.isEmpty()) return false;
-
-    // Check if we have enough energy
-    int cost = 100; // default
-    auto testSkill = SkillFactory::instance().create(m_equippedSkillId);
-    if (testSkill) {
-        cost = testSkill->energyCost();
+    m_loadoutSkillIds = skillIds;
+    if (m_defaultSlot >= m_loadoutSkillIds.size()) {
+        m_defaultSlot = 0;
     }
+    emit loadoutChanged();
+}
 
+void SkillManager::setDefaultSlot(int slot)
+{
+    if (slot < 0 || slot >= m_loadoutSkillIds.size() || slot == m_defaultSlot) {
+        return;
+    }
+    m_defaultSlot = slot;
+    emit defaultSlotChanged(slot);
+}
+
+bool SkillManager::tryActivateSlot(int slot, TetrisBoard& board)
+{
+    if (!isSlotUnlocked(slot)) return false;
+    setDefaultSlot(slot);
+    return tryActivateSkillId(m_loadoutSkillIds[slot], board);
+}
+
+bool SkillManager::canActivateSlot(int slot) const
+{
+    if (!isSlotUnlocked(slot) || m_activeSkill) return false;
+    return m_energy >= skillEnergyCost(m_loadoutSkillIds[slot]);
+}
+
+bool SkillManager::isSlotUnlocked(int slot) const
+{
+    return slot >= 0 && slot < m_loadoutSkillIds.size();
+}
+
+bool SkillManager::tryActivateSkillId(const QString& skillId, TetrisBoard& board)
+{
+    if (m_activeSkill) return false;
+    if (skillId.isEmpty()) return false;
+
+    const int cost = skillEnergyCost(skillId);
     if (m_energy < cost) return false;
 
-    // Consume energy
     m_energy -= cost;
     emit energyChanged(m_energy, maxEnergy());
     emit energyFull(false);
 
-    // Create and activate
-    m_activeSkill = SkillFactory::instance().create(m_equippedSkillId);
+    m_activeSkill = SkillFactory::instance().create(skillId);
     if (!m_activeSkill) return false;
 
-    // Record stats
-    m_skillUseCounts[m_equippedSkillId]++;
+    m_activeSkillId = skillId;
+    m_skillUseCounts[skillId]++;
     m_totalSkillUses++;
 
-    emit skillActivated(m_activeSkill->name());
-
-    // Call activate (for instant skills, deactivate immediately after)
+    emit skillActivated(skillId);
     m_activeSkill->onActivate(board, *m_engine);
 
     if (m_activeSkill->isInstant()) {
-        emit skillDeactivated(m_activeSkill->name());
+        emit skillDeactivated(skillId);
         m_activeSkill.reset();
+        m_activeSkillId.clear();
     }
 
     return true;
@@ -84,39 +110,22 @@ void SkillManager::update(qint64 deltaMs)
 
     m_activeSkill->onTick(m_engine->board(), *m_engine, deltaMs);
 
-    // Check expiry
     if (m_activeSkill->isExpired()) {
         m_activeSkill->onDeactivate(m_engine->board(), *m_engine);
-        emit skillDeactivated(m_activeSkill->name());
+        emit skillDeactivated(m_activeSkillId);
         m_activeSkill.reset();
+        m_activeSkillId.clear();
     }
-}
-
-void SkillManager::activateSkill(TetrisBoard& board)
-{
-    if (!m_activeSkill) return;
-    m_activeSkill->onActivate(board, *m_engine);
-}
-
-void SkillManager::deactivateSkill(TetrisBoard& board)
-{
-    if (!m_activeSkill) return;
-    m_activeSkill->onDeactivate(board, *m_engine);
-    emit skillDeactivated(m_activeSkill->name());
-    m_activeSkill.reset();
 }
 
 float SkillManager::gravityMultiplier() const
 {
-    if (m_activeSkill) {
-        return m_activeSkill->gravityMultiplier();
-    }
-    return 1.0f;
+    return m_activeSkill ? m_activeSkill->gravityMultiplier() : 1.0f;
 }
 
 QStringList SkillManager::availableSkills() const
 {
-    return SkillFactory::instance().registeredSkills();
+    return GameConfig::skillUnlockOrder();
 }
 
 QString SkillManager::skillName(const QString& skillId) const
@@ -140,7 +149,7 @@ QColor SkillManager::skillColor(const QString& skillId) const
 int SkillManager::skillEnergyCost(const QString& skillId) const
 {
     auto skill = SkillFactory::instance().create(skillId);
-    return skill ? skill->energyCost() : 100;
+    return skill ? skill->energyCost() : maxEnergy();
 }
 
 int SkillManager::skillUseCount(const QString& skillId) const

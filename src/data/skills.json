@@ -2,19 +2,55 @@
     {
         "typeId": "time_freeze",
         "name": "时间凝滞",
-        "description": "当前方块下落速度降低80%，持续6秒，方便微调位置",
+        "description": "显著降低当前下落速度，适合紧急救场。",
         "themeColor": "#3CA0FF",
         "isInstant": false,
         "duration": 6000,
-        "energyCost": 100
+        "energyCost": 35
+    },
+    {
+        "typeId": "bottom_blast",
+        "name": "底部爆破",
+        "description": "清除最底部 1 行，并让上方方块整体下落。",
+        "themeColor": "#FFAA46",
+        "isInstant": true,
+        "duration": 0,
+        "energyCost": 45
+    },
+    {
+        "typeId": "line_clear",
+        "name": "直线清扫",
+        "description": "清除当前最危险的一行，适合快速拆弹。",
+        "themeColor": "#5AF0C8",
+        "isInstant": true,
+        "duration": 0,
+        "energyCost": 60
     },
     {
         "typeId": "earthquake",
         "name": "大地震",
-        "description": "消除最底部的两行（即使未满），上方方块整体下落",
+        "description": "强制清除最底部 2 行，快速压低堆叠。",
         "themeColor": "#B46428",
         "isInstant": true,
         "duration": 0,
-        "energyCost": 100
+        "energyCost": 80
+    },
+    {
+        "typeId": "gravity_break",
+        "name": "失重领域",
+        "description": "短时间内极大降低下落速度，争取重整棋形。",
+        "themeColor": "#AF78FF",
+        "isInstant": false,
+        "duration": 4000,
+        "energyCost": 95
+    },
+    {
+        "typeId": "purge_wave",
+        "name": "净场脉冲",
+        "description": "清除底部 4 行，代价极高，但能强行续命。",
+        "themeColor": "#FF5A78",
+        "isInstant": true,
+        "duration": 0,
+        "energyCost": 120
     }
 ]

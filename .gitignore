@@ -1,4 +1,4 @@
-# 编译产物
+# Build outputs
 build/
 cmake-build-*/
 out/
@@ -7,16 +7,25 @@ out/
 *.exe
 *.out
 *.app
+*.dll
+*.a
+*.lib
 
-# IDE
+# Logs and temporary runtime files
+*.log
+*.tmp
+*.cache
+
+# IDE and editor files
 .vs/
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+*.user
 
-# 系统文件
+# System files
 .DS_Store
 Thumbs.db
 Desktop.ini

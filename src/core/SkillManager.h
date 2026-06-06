@@ -3,6 +3,8 @@
 
 #include <QObject>
 #include <memory>
+
+#include "GameConfig.h"
 #include "skills/SkillBase.h"
 
 class TetrisBoard;
@@ -13,56 +15,57 @@ class SkillManager : public QObject {
 public:
     explicit SkillManager(QObject* parent = nullptr);
 
-    // Energy
     int energy() const { return m_energy; }
-    int maxEnergy() const { return 100; }
+    int maxEnergy() const { return GameConfig::kEnergyMax; }
     bool isEnergyFull() const { return m_energy >= maxEnergy(); }
     void addEnergy(int amount);
     void reset();
 
-    // Skill
-    QString equippedSkillId() const { return m_equippedSkillId; }
-    void equipSkill(const QString& skillId);
+    void setUnlockedSkills(const QStringList& skillIds);
+    void setLoadoutSkills(const QStringList& skillIds);
+    QStringList unlockedSkills() const { return m_unlockedSkillIds; }
+    QStringList loadoutSkills() const { return m_loadoutSkillIds; }
+    QString activeSkillId() const { return m_activeSkillId; }
+    int defaultSlot() const { return m_defaultSlot; }
+    void setDefaultSlot(int slot);
 
     bool isSkillActive() const { return m_activeSkill != nullptr; }
     float gravityMultiplier() const;
 
-    // Try to activate equipped skill. Returns true if activated.
-    bool tryActivate(TetrisBoard& board);
+    bool tryActivateSlot(int slot, TetrisBoard& board);
+    bool canActivateSlot(int slot) const;
+    bool isSlotUnlocked(int slot) const;
 
-    // Called each frame by GameEngine
     void update(qint64 deltaMs);
 
-    // Get list of all available skills (for UI)
     QStringList availableSkills() const;
-
-    // Get info for a registered skill
     QString skillName(const QString& skillId) const;
     QString skillDescription(const QString& skillId) const;
     QColor skillColor(const QString& skillId) const;
     int skillEnergyCost(const QString& skillId) const;
 
-    // Skill usage stats
     int skillUseCount(const QString& skillId) const;
     int totalSkillUses() const { return m_totalSkillUses; }
 
 signals:
     void energyChanged(int current, int max);
     void energyFull(bool full);
-    void skillActivated(const QString& skillName);
-    void skillDeactivated(const QString& skillName);
-    void skillEquipped(const QString& skillId);
+    void skillActivated(const QString& skillId);
+    void skillDeactivated(const QString& skillId);
+    void loadoutChanged();
+    void defaultSlotChanged(int slot);
 
 private:
-    void activateSkill(TetrisBoard& board);
-    void deactivateSkill(TetrisBoard& board);
+    bool tryActivateSkillId(const QString& skillId, TetrisBoard& board);
 
     int m_energy = 0;
-    QString m_equippedSkillId;
+    QStringList m_unlockedSkillIds;
+    QStringList m_loadoutSkillIds;
     std::unique_ptr<SkillBase> m_activeSkill;
-    GameEngine* m_engine = nullptr; // set by GameEngine after construction
+    QString m_activeSkillId;
+    int m_defaultSlot = 0;
+    GameEngine* m_engine = nullptr;
 
-    // Stats
     QHash<QString, int> m_skillUseCounts;
     int m_totalSkillUses = 0;
 

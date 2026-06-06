@@ -1,8 +1,8 @@
 #ifndef TIMEFREEZESKILL_H
 #define TIMEFREEZESKILL_H
 
-#include "skills/SkillBase.h"
 #include "GameConfig.h"
+#include "skills/SkillBase.h"
 
 class TimeFreezeSkill : public SkillBase {
 public:
@@ -11,15 +11,12 @@ public:
     void onDeactivate(TetrisBoard& board, GameEngine& engine) override;
 
     QString name() const override { return QStringLiteral("时间凝滞"); }
-    QString description() const override {
-        return QStringLiteral("当前方块下落速度降低80%，持续6秒，方便微调位置");
-    }
+    QString description() const override { return QStringLiteral("显著降低当前下落速度，适合紧急救场。"); }
     QColor themeColor() const override { return QColor(60, 160, 255); }
     QString typeId() const override { return QStringLiteral("time_freeze"); }
-
     bool isInstant() const override { return false; }
     qint64 duration() const override { return GameConfig::kTimeFreezeDuration; }
-    int energyCost() const override { return 100; }
+    int energyCost() const override { return 35; }
     float gravityMultiplier() const override { return GameConfig::kTimeFreezeSlowFactor; }
 };
 

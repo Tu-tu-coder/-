@@ -3,14 +3,15 @@
 
 #include <QDialog>
 #include <QLabel>
-#include <QPushButton>
+
+#include "../core/ProgressManager.h"
 
 class GameEngine;
 
 class GameOverDialog : public QDialog {
     Q_OBJECT
 public:
-    explicit GameOverDialog(GameEngine* engine, QWidget* parent = nullptr);
+    explicit GameOverDialog(GameEngine* engine, const ProgressUpdateResult& progressResult, QWidget* parent = nullptr);
 
 signals:
     void restartRequested();
@@ -18,8 +19,9 @@ signals:
 
 private:
     GameEngine* m_engine = nullptr;
-    QLabel* m_scoreLabel;
-    QLabel* m_statsLabel;
+    ProgressUpdateResult m_progressResult;
+    QLabel* m_scoreLabel = nullptr;
+    QLabel* m_statsLabel = nullptr;
 };
 
-#endif
+#endif // GAMEOVERDIALOG_H

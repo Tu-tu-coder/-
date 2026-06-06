@@ -3,6 +3,7 @@
 
 #include <QColor>
 #include <QString>
+#include <QStringList>
 
 namespace GameConfig {
 
@@ -42,7 +43,7 @@ constexpr int kGravityReductionPerLevel = 20; // ms faster per level
 constexpr int kMaxLevel = 30;
 
 // Energy system
-constexpr int kEnergyMax = 100;
+constexpr int kEnergyMax = 140;
 constexpr int kEnergySingle = 20;
 constexpr int kEnergyDouble = 35;
 constexpr int kEnergyTriple = 50;
@@ -52,6 +53,53 @@ constexpr int kEnergyComboBonus = 5;
 // Skill duration (ms)
 constexpr int kTimeFreezeDuration = 6000;
 constexpr float kTimeFreezeSlowFactor = 0.2f;
+constexpr int kGravityBreakDuration = 4000;
+constexpr float kGravityBreakSlowFactor = 0.08f;
+constexpr int kLeaderboardSize = 5;
+constexpr int kInitialCarrySlots = 2;
+constexpr int kMaxCarrySlots = 4;
+
+inline QStringList skillUnlockOrder()
+{
+    return {
+        QStringLiteral("time_freeze"),
+        QStringLiteral("bottom_blast"),
+        QStringLiteral("line_clear"),
+        QStringLiteral("earthquake"),
+        QStringLiteral("gravity_break"),
+        QStringLiteral("purge_wave")
+    };
+}
+
+inline int skillUnlockThreshold(const QString& skillId)
+{
+    if (skillId == QStringLiteral("time_freeze")) return 0;
+    if (skillId == QStringLiteral("bottom_blast")) return 0;
+    if (skillId == QStringLiteral("line_clear")) return 1200;
+    if (skillId == QStringLiteral("earthquake")) return 3000;
+    if (skillId == QStringLiteral("gravity_break")) return 5500;
+    if (skillId == QStringLiteral("purge_wave")) return 9000;
+    return 0;
+}
+
+inline int carrySlotsForHighScore(int highScore)
+{
+    if (highScore >= 9000) return 4;
+    if (highScore >= 3000) return 3;
+    return 2;
+}
+
+inline QStringList unlockedSkillsForHighScore(int highScore)
+{
+    QStringList result;
+    const QStringList order = skillUnlockOrder();
+    for (const QString& skillId : order) {
+        if (highScore >= skillUnlockThreshold(skillId)) {
+            result.push_back(skillId);
+        }
+    }
+    return result;
+}
 
 // Piece colors (bright cartoon style)
 inline QColor pieceColor(PieceType type) {

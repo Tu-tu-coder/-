@@ -29,7 +29,7 @@ void GameEngine::setSkillManager(SkillManager* sm)
     }
 }
 
-void GameEngine::startGame(GameMode mode, const QString& /*skillId*/)
+void GameEngine::startGame(GameMode mode)
 {
     m_board.reset();
     m_bag.reset();
@@ -350,9 +350,16 @@ void GameEngine::processInput(GameAction action, bool pressed)
             break;
         case GameAction::ActivateSkill:
             if (m_skillManager && isSkillsEnabled()) {
-                if (m_skillManager->tryActivate(m_board)) {
-                    // Skill activation will emit its own signals
-                }
+                m_skillManager->tryActivateSlot(m_skillManager->defaultSlot(), m_board);
+            }
+            break;
+        case GameAction::ActivateSkillSlot1:
+        case GameAction::ActivateSkillSlot2:
+        case GameAction::ActivateSkillSlot3:
+        case GameAction::ActivateSkillSlot4:
+            if (m_skillManager && isSkillsEnabled()) {
+                const int slot = static_cast<int>(action) - static_cast<int>(GameAction::ActivateSkillSlot1);
+                m_skillManager->tryActivateSlot(slot, m_board);
             }
             break;
         case GameAction::Pause:

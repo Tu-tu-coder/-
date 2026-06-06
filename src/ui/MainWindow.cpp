@@ -15,19 +15,13 @@
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
-    // Create core
     m_engine = new GameEngine(this);
     m_skillMgr = new SkillManager(this);
     m_engine->setSkillManager(m_skillMgr);
 
-    // Set up UI
     setupUI();
     setupConnections();
-
-    // Show menu first
     showMenuUI();
-
-    // Set dark theme
     setStyleSheet("QMainWindow { background-color: #12122A; }");
 }
 
@@ -86,7 +80,7 @@ void MainWindow::setupUI()
     m_energyBar = new EnergyBarWidget(m_skillMgr);
     rightLayout->addWidget(m_energyBar);
 
-    m_skillPanel = new SkillPanelWidget(m_skillMgr);
+    m_skillPanel = new SkillPanelWidget(m_skillMgr, m_engine);
     rightLayout->addWidget(m_skillPanel);
 
     rightLayout->addStretch();
@@ -101,11 +95,9 @@ void MainWindow::setupUI()
 
 void MainWindow::setupConnections()
 {
-    // Menu signals
     connect(m_menuPage, &MenuWidget::startGame,
             this, &MainWindow::onStartGame);
 
-    // Engine signals
     connect(m_engine, &GameEngine::gameStateChanged, this, [this](GameState state) {
         if (state == GameState::GameOver) {
             stopGameTimer();
@@ -113,26 +105,20 @@ void MainWindow::setupConnections()
         }
     });
 
-    // Game timer
     connect(m_gameTimer, &QTimer::timeout, this, &MainWindow::onGameTick);
 }
 
-void MainWindow::onStartGame(GameMode mode, const QString& skillId)
+void MainWindow::onStartGame(GameMode mode, const QStringList& selectedLoadoutSkillIds)
 {
-    // Equip skill if provided
-    if (!skillId.isEmpty() && m_skillMgr) {
-        m_skillMgr->equipSkill(skillId);
+    if (mode == GameMode::InfiniteChallenge) {
+        m_progress.saveSelectedLoadout(selectedLoadoutSkillIds);
     }
+    configureSkillsForMode(mode, selectedLoadoutSkillIds);
 
-    // Start engine
-    m_engine->startGame(mode, skillId);
+    m_engine->startGame(mode);
     m_frameTimer.start();
-
-    // Show game UI
     showGameUI();
     startGameTimer();
-
-    // Set focus to board for keyboard input
     m_boardWidget->setFocus();
 }
 
@@ -146,10 +132,15 @@ void MainWindow::onGameTick()
 
 void MainWindow::onGameOver()
 {
-    GameOverDialog dialog(m_engine, this);
+    const ProgressUpdateResult result = m_progress.recordGameResult(
+        m_engine->score(),
+        m_engine->level(),
+        m_engine->totalLines(),
+        modeLabel(m_engine->mode()));
+    GameOverDialog dialog(m_engine, result, this);
 
-    // Connect dialog signals
     connect(&dialog, &GameOverDialog::restartRequested, this, [this]() {
+        configureSkillsForMode(m_engine->mode(), m_progress.snapshot().selectedLoadoutSkillIds);
         m_engine->restart();
         m_frameTimer.start();
         showGameUI();
@@ -166,6 +157,35 @@ void MainWindow::showMenu()
     showMenuUI();
 }
 
+void MainWindow::configureSkillsForMode(GameMode mode, const QStringList& selectedLoadoutSkillIds)
+{
+    const ProgressSnapshot snapshot = m_progress.snapshot();
+    m_skillMgr->setUnlockedSkills(snapshot.unlockedSkillIds);
+
+    if (mode != GameMode::InfiniteChallenge) {
+        m_skillMgr->setLoadoutSkills({});
+        m_skillMgr->reset();
+        return;
+    }
+
+    const QStringList loadout = selectedLoadoutSkillIds.isEmpty()
+        ? snapshot.selectedLoadoutSkillIds
+        : selectedLoadoutSkillIds;
+    m_skillMgr->setLoadoutSkills(loadout);
+    m_skillMgr->setDefaultSlot(0);
+    m_skillMgr->reset();
+}
+
+QString MainWindow::modeLabel(GameMode mode) const
+{
+    switch (mode) {
+        case GameMode::Classic: return QStringLiteral("Classic");
+        case GameMode::InfiniteChallenge: return QStringLiteral("Challenge");
+        case GameMode::Battle: return QStringLiteral("Battle");
+    }
+    return QStringLiteral("Unknown");
+}
+
 void MainWindow::showGameUI()
 {
     m_stack->setCurrentIndex(1);
@@ -175,6 +195,7 @@ void MainWindow::showGameUI()
 void MainWindow::showMenuUI()
 {
     stopGameTimer();
+    m_menuPage->setProgressSnapshot(m_progress.snapshot());
     m_stack->setCurrentIndex(0);
 }
 
